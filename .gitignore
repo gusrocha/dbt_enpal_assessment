@@ -1,0 +1,14 @@
+# dbt artifacts
+target/
+dbt_packages/
+logs/
+
+# python virtual environment
+.venv/
+
+# dbt-specific
+.user.yml
+
+# OS / editor noise
+.DS_Store
+.vscode/

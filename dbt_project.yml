@@ -5,6 +5,10 @@
 name: 'enpal_assessment_project'
 version: '1.0.0'
 
+vars:
+  date_spine_start: '2024-01-01'
+  date_spine_end: '2026-07-01'
+
 # This setting configures which "profile" dbt uses for this project.
 profile: 'enpal_assessment_project'
 
@@ -33,4 +37,9 @@ models:
   enpal_assessment_project:
     # Config indicated by + and applies to all files under models/example/
     +schema: pipedrive_analytics
-    +materialized: table
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table

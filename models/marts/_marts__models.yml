@@ -1,0 +1,108 @@
+version: 2
+
+models:
+  - name: fct_funnel_events
+    description: >
+      Fact table at the atomic grain of one row per funnel event: a deal entering a main pipeline stage, or completing a qualifying sales call. Serves the monthly funnel report and any further funnel KPI (conversion, drop-off, velocity, per-rep, activity intensity) as a group-by over this table.
+    columns:
+      - name: funnel_event_id
+        description: Surrogate key hashed from deal_id, funnel_step_order, substep_order and event_at.
+        data_tests:
+          - unique
+          - not_null
+      - name: deal_id
+        description: Deal the event belongs to.
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_deals')
+              field: deal_id
+      - name: funnel_step
+        description: Human-readable step name (e.g. Lead Generation, Sales Call 1).
+        data_tests:
+          - not_null
+      - name: funnel_step_order
+        description: Main-step order 1-9, shared by a sub-step and its parent stage.
+        data_tests:
+          - not_null
+      - name: substep_order
+        description: 0 for main stage entries, 1 for sales-call sub-steps.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: event_source
+        description: Origin of the event, either 'stage' or 'call'.
+        data_tests:
+          - accepted_values:
+              values: ['stage', 'call']
+      - name: event_at
+        description: >
+          Timestamp of the event. For stages, the stage-entry time; for calls, the scheduled time (due_at), used as a proxy since the source has no completion timestamp.
+        data_tests:
+          - not_null
+
+  - name: dim_deals
+    description: One row per deal, reconstructed from the change log, with owner and lost reason decoded.
+    columns:
+      - name: deal_id
+        description: Primary key of the deal.
+        data_tests:
+          - unique
+          - not_null
+      - name: created_at
+        description: Deal creation timestamp (earliest add_time event).
+      - name: owner_id
+        description: Current owner (latest user_id change); the user in their owner role.
+      - name: owner_name
+        description: Current owner's name.
+      - name: lost_reason_id
+        description: Code for why the deal was lost.
+      - name: lost_reason_name
+        description: Decoded lost-reason label.
+
+  - name: dim_stages
+    description: One row per pipeline stage, ordered 1-9.
+    columns:
+      - name: stage_id
+        description: Primary key and funnel order of the stage.
+        data_tests:
+          - unique
+          - not_null
+      - name: stage_name
+        description: Human-readable stage name.
+
+  - name: dim_users
+    description: One row per user (sales rep).
+    columns:
+      - name: user_id
+        description: Primary key of the user.
+        data_tests:
+          - unique
+          - not_null
+      - name: user_name
+        description: User's full name.
+      - name: email
+        description: User's email address.
+
+  - name: dim_date
+    description: Monthly date spine, one row per month, used to guarantee gap-free reporting.
+    columns:
+      - name: month
+        description: First day of the month.
+        data_tests:
+          - unique
+          - not_null
+
+  - name: rep_sales_funnel_monthly
+    description: >
+      Reporting model: distinct deals entering each funnel step per month, dense across every month-and-step combination (zeros where nothing occurred).
+    columns:
+      - name: month
+        description: Reporting month.
+      - name: kpi_name
+        description: Funnel step name.
+      - name: funnel_step
+        description: Funnel step position (e.g. 1, 2, 2.1, 3, 3.1 ... 9).
+      - name: deals_count
+        description: Distinct deals that entered the step in the month.

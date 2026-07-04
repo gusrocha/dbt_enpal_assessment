@@ -1,0 +1,99 @@
+version: 2
+
+sources:
+  - name: pipedrive
+    description: >
+      Raw Pipedrive CRM export loaded into the local Postgres `public` schema. A deal is never stored as its own table; deal state is reconstructed from the `deal_changes` change log.
+    database: postgres
+    schema: public
+    tables:
+      - name: deal_changes
+        description: >
+          Append-only change log in entity-attribute-value shape. One row per field change on a deal (which field changed, to what value, and when). Source for deal reconstruction, stage-entry events and lost reasons.
+        columns:
+          - name: deal_id
+            description: Identifier of the deal the change belongs to. Not unique.
+          - name: change_time
+            description: Timestamp the change occurred.
+          - name: changed_field_key
+            description: >
+              Which deal field changed; joins to `fields.field_key`. Observed values: add_time, user_id, stage_id, lost_reason.
+          - name: new_value
+            description: Value the field changed to. Meaning depends on changed_field_key.
+
+      - name: activity
+        description: >
+          Activities (calls) logged against deals, on a separate track from stage changes. Source of the Sales Call funnel sub-steps.
+        columns:
+          - name: activity_id
+            description: Unique identifier of the activity.
+            data_tests:
+              # - unique # activity_id is not unique in the data source
+              - not_null
+          - name: type
+            description: Activity type key; joins to `activity_types.type`.
+          - name: assigned_to_user
+            description: User the activity is assigned to; joins to `users.id`.
+          - name: deal_id
+            description: Deal the activity belongs to.
+          - name: done
+            description: Whether the activity is completed.
+          - name: due_to
+            description: Due date and time of the activity.
+
+      - name: activity_types
+        description: Lookup decoding activity type keys into readable names.
+        columns:
+          - name: id
+            description: Primary key of the activity type.
+            data_tests:
+              - unique
+              - not_null
+          - name: name
+            description: Human-readable activity name (e.g. Sales Call 1).
+          - name: active
+            description: Whether the activity type is active.
+          - name: type
+            description: Activity type key, joined from `activity.type`.
+
+      - name: stages
+        description: Lookup of the nine pipeline stages, ordered by stage_id.
+        columns:
+          - name: stage_id
+            description: Primary key and funnel order of the stage.
+            data_tests:
+              - unique
+              - not_null
+          - name: stage_name
+            description: Human-readable stage name.
+
+      - name: users
+        description: Sales reps who own deals and are assigned activities.
+        columns:
+          - name: id
+            description: Primary key of the user.
+            data_tests:
+              - unique
+              - not_null
+          - name: name
+            description: User's full name.
+          - name: email
+            description: User's email address.
+          - name: modified
+            description: Last-modified timestamp of the user record.
+
+      - name: fields
+        description: >
+          Pipedrive DealFields metadata (the data dictionary). Decodes changed_field_key labels and holds option labels for categorical fields such as stage_id and lost_reason.
+        columns:
+          - name: id
+            description: Primary key of the field definition.
+            data_tests:
+              - unique
+              - not_null
+          - name: field_key
+            description: Field key, joined from `deal_changes.changed_field_key`.
+          - name: name
+            description: Human-readable field label.
+          - name: field_value_options
+            description: JSON array of {id, label} options for categorical fields.

@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  - name: int_deal_stage_events
+    description: >
+      One row per stage-entry event: a deal entering a pipeline stage, with the
+      stage decoded and the entry timestamp. Extracted from the change log.
+    columns:
+      - name: deal_id
+        data_tests:
+          - not_null
+      - name: stage_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_pipedrive__stages')
+              field: stage_id
+      - name: entered_at
+        data_tests:
+          - not_null
+
+  - name: int_deal_call_events
+    description: >
+      One row per completed qualifying sales call (Sales Call 1 or 2), with the
+      call decoded and its scheduled time. Only is_done calls are included.
+    columns:
+      - name: deal_id
+        data_tests:
+          - not_null
+      - name: call_name
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['Sales Call 1', 'Sales Call 2']
+      - name: occurred_at
+        data_tests:
+          - not_null
+
+  - name: int_funnel_events
+    description: >
+      Unified funnel event stream: stage entries and completed calls combined
+      into one grain, one row per funnel event, with ordering keys, source and
+      surrogate key. Feeds fct_funnel_events.
+    columns:
+      - name: funnel_event_id
+        data_tests:
+          - unique
+          - not_null
+      - name: deal_id
+        data_tests:
+          - not_null
+
+  - name: int_deals__pivoted
+    description: >
+      One row per deal across the full referenced universe (change log and
+      activities), with creation time, current owner and lost reason as
+      attributes. Deals referenced only by activities carry null attributes.
+    columns:
+      - name: deal_id
+        data_tests:
+          - unique
+          - not_null
+
+  - name: int_lost_reasons__unnested
+    description: One row per lost-reason code, unnested from the fields metadata JSON.
+    columns:
+      - name: lost_reason_id
+        data_tests:
+          - unique
+          - not_null
+      - name: lost_reason_name
+        data_tests:
+          - not_null
