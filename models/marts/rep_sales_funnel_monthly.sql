@@ -4,6 +4,17 @@ funnel_events as (
     select * from {{ ref('fct_funnel_events') }}
 ),
 
+-- Canonical funnel steps (seed).
+funnel_steps as (
+    select
+        funnel_step,
+        funnel_step_order,
+        substep_order,
+        kpi_name
+    from {{ ref('dim_funnel_steps') }}
+),
+
+-- Reporting months, clipped to the range of observed events.
 dates as (
     select month
     from {{ ref('dim_date') }}
@@ -12,46 +23,34 @@ dates as (
         and (select date_trunc('month', max(event_at))::date from funnel_events)
 ),
 
--- The distinct set of funnel steps, with their ordering, drawn from the fact.
-funnel_steps as (
-    select distinct
-        funnel_step,
-        funnel_step_order,
-        substep_order
-    from funnel_events
-),
-
--- Complete grid: every month crossed with every funnel step.
+-- Complete grid: every month crossed with every canonical funnel step.
 spine as (
     select
         dates.month,
         funnel_steps.funnel_step,
         funnel_steps.funnel_step_order,
-        funnel_steps.substep_order
+        funnel_steps.substep_order,
+        funnel_steps.kpi_name
     from dates
     cross join funnel_steps
 ),
 
--- Actual deals entering each step per month.
+-- Actual distinct deals entering each step per month, keyed by step order.
 monthly_counts as (
     select
         date_trunc('month', event_at)::date as month,
-        funnel_step,
         funnel_step_order,
         substep_order,
         count(distinct deal_id)             as deals_count
     from funnel_events
-    group by 1, 2, 3, 4
+    group by 1, 2, 3
 ),
 
 final as (
     select
         spine.month,
-        spine.funnel_step                       as kpi_name,
-        spine.funnel_step_order::text ||
-            case when spine.substep_order > 0
-                 then '.' || spine.substep_order::text
-                 else '' end                    as funnel_step,
+        spine.kpi_name,
+        spine.funnel_step,
         coalesce(monthly_counts.deals_count, 0) as deals_count
     from spine
     left join monthly_counts

@@ -12,7 +12,7 @@ funnel_events as (
 
     select
         deal_id,
-        stage_name       as funnel_step,
+        stage_name       as funnel_step_name ,
         stage_id         as funnel_step_order,
         0                as substep_order,  -- main steps are always 0
         'stage'          as event_source,
@@ -23,7 +23,7 @@ funnel_events as (
 
     select
         deal_id,
-        call_name        as funnel_step,
+        call_name        as funnel_step_name ,
         case call_name
             when 'Sales Call 1' then 2   -- ties it directly to Step 2
             when 'Sales Call 2' then 3   -- ties it directly to Step 3

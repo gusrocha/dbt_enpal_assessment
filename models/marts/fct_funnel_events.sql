@@ -7,7 +7,7 @@ funnel_events as (
 select
     funnel_event_id,
     deal_id,
-    funnel_step,
+    funnel_step_name,
     funnel_step_order,
     substep_order,
     event_source,

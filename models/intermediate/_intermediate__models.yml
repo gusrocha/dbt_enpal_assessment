@@ -3,8 +3,7 @@ version: 2
 models:
   - name: int_deal_stage_events
     description: >
-      One row per stage-entry event: a deal entering a pipeline stage, with the
-      stage decoded and the entry timestamp. Extracted from the change log.
+      One row per stage-entry event: a deal entering a pipeline stage, with the stage decoded and the entry timestamp. Extracted from the change log.
     columns:
       - name: deal_id
         data_tests:
@@ -21,8 +20,7 @@ models:
 
   - name: int_deal_call_events
     description: >
-      One row per completed qualifying sales call (Sales Call 1 or 2), with the
-      call decoded and its scheduled time. Only is_done calls are included.
+      One row per completed qualifying sales call (Sales Call 1 or 2), with the call decoded and its scheduled time. Only is_done calls are included.
     columns:
       - name: deal_id
         data_tests:
@@ -38,9 +36,7 @@ models:
 
   - name: int_funnel_events
     description: >
-      Unified funnel event stream: stage entries and completed calls combined
-      into one grain, one row per funnel event, with ordering keys, source and
-      surrogate key. Feeds fct_funnel_events.
+      Unified funnel event stream: stage entries and completed calls combined into one grain, one row per funnel event, with ordering keys, source and surrogate key.
     columns:
       - name: funnel_event_id
         data_tests:

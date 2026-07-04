@@ -43,3 +43,12 @@ models:
       +materialized: view
     marts:
       +materialized: table
+
+seeds:
+  enpal_assessment_project:
+    +schema: pipedrive_analytics
+    funnel_steps:
+      +column_types:
+        funnel_step_order: integer
+        substep_order: integer
+        kpi_name: text

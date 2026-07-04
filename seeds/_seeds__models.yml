@@ -1,0 +1,27 @@
+version: 2
+
+seeds:
+  - name: funnel_steps
+    description: >
+      Canonical definition of the nine funnel steps and two sales-call sub-steps, loaded once from the assessment brief. This decouples the reported labels from whatever the source tables name each stage.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - funnel_step_order
+            - substep_order
+    columns:
+      - name: funnel_step_order
+        description: Main-step order, 1-9. Shared by a sub-step and its parent stage.
+        data_tests:
+          - not_null
+      - name: substep_order
+        description: 0 for a main step, 1 for a sales-call sub-step.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: kpi_name
+        description: Human-readable step name, exactly as worded in the brief.
+        data_tests:
+          - not_null
+          - unique
